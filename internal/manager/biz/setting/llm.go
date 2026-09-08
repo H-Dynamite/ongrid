@@ -218,13 +218,21 @@ func (r *LLMSettingsResolver) ResolveProviders(ctx context.Context) ([]llm.Provi
 		if strings.TrimSpace(label) == "" {
 			label = pk.label // env defaults carry no label for custom
 		}
+		tlsInsecure := false
+		if pk.id == model.LLMProviderCustom {
+			raw, _, err := r.svc.Get(ctx, model.CategoryLLM, model.KeyCustomTLSInsecure)
+			if err == nil {
+				tlsInsecure = raw == "true"
+			}
+		}
 		out = append(out, llm.ProviderConfig{
-			ID:      pk.id,
-			Label:   label,
-			APIKey:  apiKey,
-			Model:   defaultModel,
-			BaseURL: baseURL,
-			Models:  models,
+			TLSInsecure: tlsInsecure,
+			ID:          pk.id,
+			Label:       label,
+			APIKey:      apiKey,
+			Model:       defaultModel,
+			BaseURL:     baseURL,
+			Models:      models,
 		})
 	}
 
