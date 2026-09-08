@@ -31,12 +31,13 @@ import (
 // closed-set of model slugs the operator wants to expose for this
 // provider; Label is the human-readable name shown in the UI dropdown.
 type ProviderConfig struct {
-	ID      string   // stable provider id, e.g. "openai" or "minimax"
-	Label   string   // display name
-	APIKey  string   // empty → provider not configured (skipped at build)
-	Model   string   // default model
-	BaseURL string   // optional base URL override
-	Models  []string // closed-set of allowed models for the UI selector
+	TLSInsecure bool
+	ID          string   // stable provider id, e.g. "openai" or "minimax"
+	Label       string   // display name
+	APIKey      string   // empty → provider not configured (skipped at build)
+	Model       string   // default model
+	BaseURL     string   // optional base URL override
+	Models      []string // closed-set of allowed models for the UI selector
 }
 
 // ProviderInfo is the subset of ProviderConfig safe to leak through the
@@ -105,7 +106,7 @@ func NewMultiClient(providers []ProviderConfig, defaultProvider string, fallback
 		if strings.TrimSpace(p.APIKey) == "" {
 			continue
 		}
-		sub := New(Config{APIKey: p.APIKey, Model: p.Model, BaseURL: p.BaseURL}, nil, nil)
+		sub := New(Config{APIKey: p.APIKey, Model: p.Model, BaseURL: p.BaseURL, TLSInsecure: p.TLSInsecure}, nil, nil)
 		mc.staticSubs[p.ID] = sub
 		models := p.Models
 		if len(models) == 0 && p.Model != "" {
@@ -193,7 +194,7 @@ func (m *MultiClient) activeSubs(ctx context.Context) (map[string]Client, []Prov
 		if strings.TrimSpace(p.APIKey) == "" {
 			continue
 		}
-		sub := New(Config{APIKey: p.APIKey, Model: p.Model, BaseURL: p.BaseURL}, nil, nil)
+		sub := New(Config{APIKey: p.APIKey, Model: p.Model, BaseURL: p.BaseURL, TLSInsecure: p.TLSInsecure}, nil, nil)
 		newSubs[p.ID] = sub
 		models := p.Models
 		if len(models) == 0 && p.Model != "" {

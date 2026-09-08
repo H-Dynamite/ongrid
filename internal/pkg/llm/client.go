@@ -49,10 +49,11 @@ const defaultTimeout = 120 * time.Second
 // without reshaping the interface. Timeout applies when the caller's ctx has
 // no deadline; default is 120s.
 type Config struct {
-	APIKey  string
-	Model   string
-	BaseURL string
-	Timeout time.Duration
+	TLSInsecure bool
+	APIKey      string
+	Model       string
+	BaseURL     string
+	Timeout     time.Duration
 }
 
 // Message is one entry in the chat completions messages array. The shape is
@@ -318,10 +319,13 @@ func (c *openaiClient) sdkFor(apiKey, baseURL string) *openai.Client {
 	if baseURL != "" {
 		sdkCfg.BaseURL = baseURL
 	}
+	transport := http.RoundTripper(NewHTTPTransport(c.cfg.TLSInsecure))
 	if zhipuauth.LooksLikeZhipuURL(baseURL) && zhipuauth.LooksLikeZhipuKey(apiKey) {
 		sdkCfg.HTTPClient = &http.Client{
-			Transport: &zhipuJWTTransport{apiKey: apiKey, base: http.DefaultTransport},
+			Transport: &zhipuJWTTransport{apiKey: apiKey, base: transport},
 		}
+	} else {
+		sdkCfg.HTTPClient = &http.Client{Transport: transport}
 	}
 	sdk := openai.NewClientWithConfig(sdkCfg)
 	c.sdkCache[k] = sdk
