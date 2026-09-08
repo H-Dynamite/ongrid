@@ -315,6 +315,7 @@ function LLMProviderCard({ meta, initialSettings }: { meta: LLMProviderMeta; ini
   const [savedOk, setSavedOk] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [newModel, setNewModel] = useState('');
+  const [modelListTouched, setModelListTouched] = useState(false);
   const [probe, setProbe] = useState<LLMProbeState>({ kind: 'idle' });
   const probeVersion = useRef(0);
 
@@ -350,6 +351,7 @@ function LLMProviderCard({ meta, initialSettings }: { meta: LLMProviderMeta; ini
       }
       setServer(next);
       setDraft(next);
+      setModelListTouched(false);
       setConfigured(providerConfigured(items, meta));
       setRevealed(false);
     } catch (e) {
@@ -364,6 +366,7 @@ function LLMProviderCard({ meta, initialSettings }: { meta: LLMProviderMeta; ini
   }, [initialSettings, refresh]);
 
   const dirty =
+    modelListTouched ||
     draft.tls_insecure !== server.tls_insecure ||
     draft.api_key !== server.api_key ||
     draft.base_url !== server.base_url ||
@@ -397,6 +400,7 @@ function LLMProviderCard({ meta, initialSettings }: { meta: LLMProviderMeta; ini
   };
 
   const removeModel = (m: string) => {
+    setModelListTouched(true);
     setSavedOk(false);
     probeVersion.current += 1;
     setProbe({ kind: 'idle' });

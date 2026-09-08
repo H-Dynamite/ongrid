@@ -297,4 +297,42 @@ describe('SettingsLLM configuration probe', () => {
     expect(testCalls).toBe(0);
     expect(saveBody).toMatchObject({ api_key: '', default_model: 'gpt-test', models: ['gpt-test'] });
   });
+
+  it('enables save after removing a persisted model', async () => {
+    server.use(
+      http.get('/api/v1/system-settings', () => HttpResponse.json({ items: baseRows(), total: 4 })),
+      http.get('/api/v1/system-settings/llm/openai_api_key/reveal', () => HttpResponse.json({ value: 'secret-key' })),
+    );
+
+    await renderPage();
+    const { controls } = await openAIControls();
+    const user = userEvent.setup();
+
+    expect(controls.getByRole('button', { name: '保存' })).toBeDisabled();
+    await user.click(controls.getByRole('button', { name: /gpt-test/ }));
+
+    expect(controls.getByRole('button', { name: '保存' })).toBeEnabled();
+  });
+
+  it('keeps save enabled when removing an unsaved discovered model restores the original list', async () => {
+    const rows = baseRows();
+    const modelsRow = rows.find((row) => row.key === 'openai_models');
+    const defaultRow = rows.find((row) => row.key === 'openai_default_model');
+    if (modelsRow) modelsRow.value = '[]';
+    if (defaultRow) defaultRow.value = '';
+    server.use(
+      http.get('/api/v1/system-settings', () => HttpResponse.json({ items: rows, total: 4 })),
+      http.get('/api/v1/system-settings/llm/openai_api_key/reveal', () => HttpResponse.json({ value: 'secret-key' })),
+      http.post('/api/v1/integrations/llm/models', () => HttpResponse.json({ models: ['discovered-model'], truncated: false })),
+    );
+
+    await renderPage();
+    const { controls } = await openAIControls();
+    const user = userEvent.setup();
+
+    await user.click(controls.getByRole('button', { name: '获取模型' }));
+    await user.click(await controls.findByRole('button', { name: /discovered-model/ }));
+
+    expect(controls.getByRole('button', { name: '保存' })).toBeEnabled();
+  });
 });
