@@ -43,10 +43,10 @@ type ProviderConfig struct {
 // ProviderInfo is the subset of ProviderConfig safe to leak through the
 // HTTP /v1/aiops/models endpoint (no API key).
 type ProviderInfo struct {
-	ID     string
-	Label  string
-	Model  string
-	Models []string
+	ID          string
+	Label       string
+	Model       string
+	Models      []string
 }
 
 // ProvidersResolver supplies a fresh provider catalog at call time. The
@@ -350,10 +350,10 @@ func llmStatusFor(err error) string {
 // shape the /v1/aiops/models response. Lives here so the wire shape is
 // co-located with the router definition.
 type ProviderInfoToWire struct {
-	ID     string   `json:"id"`
-	Label  string   `json:"label"`
-	Models []string `json:"models"`
-	Model  string   `json:"model,omitempty"`
+	ID          string   `json:"id"`
+	Label       string   `json:"label"`
+	Models      []string `json:"models"`
+	Model       string   `json:"model,omitempty"`
 }
 
 // AsWire renders the router's provider catalog into the JSON DTO the
@@ -363,10 +363,10 @@ func (m *MultiClient) AsWire() []ProviderInfoToWire {
 	out := make([]ProviderInfoToWire, 0, len(infos))
 	for _, p := range infos {
 		out = append(out, ProviderInfoToWire{
-			ID:     p.ID,
-			Label:  p.Label,
-			Models: p.Models,
-			Model:  p.Model,
+			ID:          p.ID,
+			Label:       p.Label,
+			Models:      p.Models,
+			Model:       p.Model,
 		})
 	}
 	return out
