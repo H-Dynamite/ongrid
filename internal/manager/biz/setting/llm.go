@@ -213,7 +213,6 @@ func (r *LLMSettingsResolver) ResolveProviders(ctx context.Context) ([]llm.Provi
 		}
 		// Dedup while preserving order.
 		models = dedupStrings(models)
-
 		label := def.Label
 		if strings.TrimSpace(label) == "" {
 			label = pk.label // env defaults carry no label for custom
