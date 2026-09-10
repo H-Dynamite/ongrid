@@ -488,6 +488,10 @@ func (h *PersistenceHandler) persistAssistant(ctx context.Context, mo *einomodel
 		c := msg.Content
 		row.Content = &c
 	}
+	if msg.ReasoningContent != "" {
+		reasoning := msg.ReasoningContent
+		row.ReasoningContent = &reasoning
+	}
 	if mo.TokenUsage != nil {
 		pt := mo.TokenUsage.PromptTokens
 		ct := mo.TokenUsage.CompletionTokens

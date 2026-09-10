@@ -205,6 +205,7 @@ func estimateEinoPromptTokens(msgs []*schema.Message) int {
 		}
 		total += perMsgOverhead
 		total += len(m.Content) / 4
+		total += len(m.ReasoningContent) / 4
 		for _, tc := range m.ToolCalls {
 			total += len(tc.Function.Name) / 4
 			total += len(tc.Function.Arguments) / 4
@@ -239,4 +240,3 @@ func extractUsage(mo *einomodel.CallbackOutput) *Usage {
 	}
 	return nil
 }
-
