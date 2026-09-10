@@ -1256,6 +1256,9 @@ func buildEinoHistory(rows []*aiopsmodel.Message) []*schema.Message {
 				Role:    schema.RoleType(m.Role),
 				Content: content,
 			}
+			if m.ReasoningContent != nil {
+				msg.ReasoningContent = *m.ReasoningContent
+			}
 			if ok {
 				msg.ToolCalls = make([]schema.ToolCall, 0, len(calls))
 				for _, tc := range calls {

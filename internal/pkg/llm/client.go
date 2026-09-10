@@ -66,12 +66,14 @@ type Config struct {
 //     ToolName is an optional hint for logs.
 //   - "system" : system prompt; Content is required.
 type Message struct {
-	Role       string
-	Content    string
-	ToolCalls  []ToolCall
-	ToolCallID string
-	ToolName   string
-	Images     []ImageInput
+	// ReasoningContent 保留模型返回的协议字段，供后续工具调用回传；不作为用户可见正文。
+	ReasoningContent string
+	Role             string
+	Content          string
+	ToolCalls        []ToolCall
+	ToolCallID       string
+	ToolName         string
+	Images           []ImageInput
 }
 
 type ImageInput struct {
@@ -326,7 +328,7 @@ func (c *openaiClient) sdkFor(apiKey, baseURL string) *openai.Client {
 	if baseURL != "" {
 		sdkCfg.BaseURL = baseURL
 	}
-	transport := http.RoundTripper(NewHTTPTransport(c.cfg.TLSInsecure))
+	transport := http.RoundTripper(&deepSeekReasoningTransport{base: NewHTTPTransport(c.cfg.TLSInsecure)})
 	if zhipuauth.LooksLikeZhipuURL(baseURL) && zhipuauth.LooksLikeZhipuKey(apiKey) {
 		sdkCfg.HTTPClient = &http.Client{
 			Transport: &zhipuJWTTransport{apiKey: apiKey, base: transport},
@@ -438,6 +440,11 @@ func (c *openaiClient) Chat(ctx context.Context, req ChatReq) (*ChatResp, error)
 	}
 
 	// 4. Issue the request through the SDK matching the resolved creds.
+	// 旧消息没有可恢复的思考字段；DeepSeek 接受显式空值，但 SDK 的
+	// omitempty 会删掉它。仅对需要此兼容处理的请求补齐空字段。
+	if needsDeepSeekReasoningCompatibility(sdkReq) {
+		callCtx = context.WithValue(callCtx, deepSeekReasoningKey{}, true)
+	}
 	sdk := c.sdkFor(apiKey, baseURL)
 	start := time.Now()
 	sdkResp, err := sdk.CreateChatCompletion(callCtx, sdkReq)
@@ -580,10 +587,11 @@ func (c *openaiClient) toOpenAIReq(req ChatReq, model string) (openai.ChatComple
 
 func toOpenAIMessage(m Message) (openai.ChatCompletionMessage, error) {
 	out := openai.ChatCompletionMessage{
-		Role:       m.Role,
-		Content:    m.Content,
-		Name:       m.ToolName,
-		ToolCallID: m.ToolCallID,
+		ReasoningContent: m.ReasoningContent,
+		Role:             m.Role,
+		Content:          m.Content,
+		Name:             m.ToolName,
+		ToolCallID:       m.ToolCallID,
 	}
 	if len(m.Images) > 0 {
 		out.Content = ""
@@ -615,10 +623,11 @@ func toOpenAIMessage(m Message) (openai.ChatCompletionMessage, error) {
 
 func fromOpenAIMessage(m openai.ChatCompletionMessage) (Message, error) {
 	out := Message{
-		Role:       m.Role,
-		Content:    m.Content,
-		ToolName:   m.Name,
-		ToolCallID: m.ToolCallID,
+		ReasoningContent: m.ReasoningContent,
+		Role:             m.Role,
+		Content:          m.Content,
+		ToolName:         m.Name,
+		ToolCallID:       m.ToolCallID,
 	}
 	if len(m.ToolCalls) > 0 {
 		out.ToolCalls = make([]ToolCall, 0, len(m.ToolCalls))
@@ -746,6 +755,7 @@ func estimatePromptTokens(msgs []Message) int {
 		total += perMsgOverhead
 		total += len(m.Content) / 4
 		total += len(m.Images) * 256
+		total += len(m.ReasoningContent) / 4
 		for _, tc := range m.ToolCalls {
 			total += len(tc.Name) / 4
 			total += len(tc.Args) / 4

@@ -432,10 +432,11 @@ func (c *clientChatModel) buildChatReq(input []*schema.Message, common *model.Op
 // Preserves text, tool calls, and user image inputs.
 func einoMessageToLLM(m *schema.Message) Message {
 	out := Message{
-		Role:       string(m.Role),
-		Content:    m.Content,
-		ToolCallID: m.ToolCallID,
-		ToolName:   m.ToolName,
+		ReasoningContent: m.ReasoningContent,
+		Role:             string(m.Role),
+		Content:          m.Content,
+		ToolCallID:       m.ToolCallID,
+		ToolName:         m.ToolName,
 	}
 	for _, part := range m.UserInputMultiContent {
 		if part.Type != schema.ChatMessagePartTypeImageURL || part.Image == nil || part.Image.Base64Data == nil {
@@ -468,11 +469,12 @@ func einoMessageFromChatResp(resp *ChatResp) *schema.Message {
 		return nil
 	}
 	m := &schema.Message{
-		Role:       schema.RoleType(resp.Assistant.Role),
-		Content:    resp.Assistant.Content,
-		Name:       resp.Assistant.ToolName,
-		ToolCallID: resp.Assistant.ToolCallID,
-		ToolName:   resp.Assistant.ToolName,
+		Role:             schema.RoleType(resp.Assistant.Role),
+		ReasoningContent: resp.Assistant.ReasoningContent,
+		Content:          resp.Assistant.Content,
+		Name:             resp.Assistant.ToolName,
+		ToolCallID:       resp.Assistant.ToolCallID,
+		ToolName:         resp.Assistant.ToolName,
 	}
 	if len(resp.Assistant.ToolCalls) > 0 {
 		m.ToolCalls = make([]schema.ToolCall, 0, len(resp.Assistant.ToolCalls))

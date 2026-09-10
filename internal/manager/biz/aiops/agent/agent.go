@@ -466,6 +466,7 @@ func (a *Agent) runInternal(ctx context.Context, sessionID string, userID uint64
 			SessionID:        sess.ID,
 			Role:             model.RoleAssistant,
 			Content:          asstContentPtr,
+			ReasoningContent: stringPtrIfSet(resp.Assistant.ReasoningContent),
 			Model:            stringPtrIfSet(modelTag),
 			PromptTokens:     &pt,
 			CompletionTokens: &ct,
@@ -843,6 +844,9 @@ func (a *Agent) buildMessages(history []*model.Message) []llm.Message {
 				content = *m.Content
 			}
 			msg := llm.Message{Role: m.Role, Content: content}
+			if m.ReasoningContent != nil {
+				msg.ReasoningContent = *m.ReasoningContent
+			}
 			if ok {
 				msg.ToolCalls = make([]llm.ToolCall, 0, len(calls))
 				for _, tc := range calls {

@@ -152,6 +152,8 @@ type Message struct {
 	AttachmentIDs []string     `gorm:"-" json:"-"`
 	ToolCallID    *string      `gorm:"size:64;column:tool_call_id"`
 	ToolName      *string      `gorm:"size:64;column:tool_name"`
+	// ReasoningContent 仅供模型协议回放，禁止通过消息 JSON 暴露给前端。
+	ReasoningContent *string `gorm:"type:longtext;column:reasoning_content" json:"-"`
 	// Model is the LLM model id that produced this message — only set on
 	// role=assistant rows. Lets the SPA show per-message provenance ("the
 	// answer above came from glm-4-plus; the answer below from opus") and
